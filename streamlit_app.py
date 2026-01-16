@@ -247,3 +247,22 @@ if run_optimization:
                 st.error("No optimal solution found. Try relaxing the constraints (increase Max Weight).")
         else:
             st.error("Could not fetch data.")
+
+    # --- LOGIC SUMMARY SECTION ---
+st.divider()
+with st.expander("ℹ️ How the Optimization Logic Works"):
+    st.markdown("""
+    ### 1. The Scoring Formula
+    The optimizer assigns a **"Value-Momentum Score"** to every stock based on two factors:
+    * **Value (50% weight):** Measured by Earnings Yield ($1/PE$). Cheaper stocks get higher scores.
+    * **Momentum (50% weight):** Measured by RSI. Stocks with strong uptrends get higher scores.
+    
+    $$
+    \\text{Score} = \\underbrace{\\left( \\frac{\\text{RSI}}{100} \\right)}_{\\text{Momentum}} + \\underbrace{\\left( \\frac{1}{\\text{PE Ratio}} \\times 50 \\right)}_{\\text{Value}}
+    $$
+
+    ### 2. Optimization Modes
+    * **📈 Maximize Gain:** The solver finds the exact mix of stocks that maximizes the **Total Portfolio Score**, subject to your concentration limit (e.g., max 25% per stock).
+    * **🛡️ Minimize Loss:** The solver finds the mix with the **lowest historical Volatility**. 
+        * *Constraint:* To ensure quality, the portfolio's average Score must still be at least equal to the market average. This prevents the algorithm from picking "safe" but "bad" stocks (expensive/weak).
+    """)
