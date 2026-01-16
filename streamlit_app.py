@@ -158,7 +158,7 @@ if run_optimization:
             if not df_opt.empty:
                 st.subheader(f"2. Optimal Allocation ({obj_choice})")
                 
-                # Simple display table
+                # Display table
                 display_df = df_opt[["Ticker", "Weight", "PE", "RSI"]].copy()
                 display_df["Weight"] = display_df["Weight"].apply(lambda x: f"{x:.1%}")
                 display_df["PE"] = display_df["PE"].apply(lambda x: f"{x:.1f}")
@@ -176,51 +176,49 @@ if run_optimization:
                 fig_quad = go.Figure()
 
                 # 1. Plot ALL Stocks (Universe)
-                # FIX: Added 'line' to make points sharp, not fuzzy
                 fig_quad.add_trace(go.Scatter(
                     x=df_market['PE'].clip(upper=FIXED_MAX_X), 
                     y=df_market['RSI'],
                     mode='markers+text',
                     text=df_market['Ticker'],
                     textposition="top center",
+                    # FIX: Make text bold and black for sharpness
+                    textfont=dict(family="Arial Black", size=11, color="black"),
                     marker=dict(
                         size=12, 
-                        color='rgba(128, 128, 128, 0.5)', # Semi-transparent fill
-                        line=dict(width=1, color='dimgray') # Solid sharp border
+                        color='rgba(128, 128, 128, 0.5)', 
+                        line=dict(width=1, color='dimgray')
                     ),
                     name='Universe'
                 ))
 
                 # 2. Plot SELECTED Portfolio Stocks
-                # FIX: Changed border to black for high contrast sharpness
                 fig_quad.add_trace(go.Scatter(
                     x=df_opt['PE'].clip(upper=FIXED_MAX_X), 
                     y=df_opt['RSI'],
                     mode='markers+text',
                     text=df_opt['Ticker'],
                     textposition="top center",
+                    # FIX: Make selected text slightly larger and bold
+                    textfont=dict(family="Arial Black", size=14, color="black"),
                     marker=dict(
                         size=18, 
                         color='blue', 
-                        line=dict(width=2, color='black') # Sharp black border
+                        line=dict(width=2, color='black')
                     ),
                     name='Selected Portfolio'
                 ))
 
                 # 3. Add Colored Quadrant Backgrounds
-                # Q1: Top Left (Value + Momentum) - Green
                 fig_quad.add_shape(type="rect", x0=0, y0=RSI_THRESHOLD, x1=PE_THRESHOLD, y1=100,
                                    fillcolor="green", opacity=0.1, layer="below", line_width=0)
                 
-                # Q2: Top Right (Growth/Expensive) - Yellow
                 fig_quad.add_shape(type="rect", x0=PE_THRESHOLD, y0=RSI_THRESHOLD, x1=FIXED_MAX_X, y1=100,
                                    fillcolor="yellow", opacity=0.1, layer="below", line_width=0)
 
-                # Q3: Bottom Left (Value Trap/Weak) - Yellow
                 fig_quad.add_shape(type="rect", x0=0, y0=0, x1=PE_THRESHOLD, y1=RSI_THRESHOLD,
                                    fillcolor="yellow", opacity=0.1, layer="below", line_width=0)
                 
-                # Q4: Bottom Right (Expensive & Weak) - Red
                 fig_quad.add_shape(type="rect", x0=PE_THRESHOLD, y0=0, x1=FIXED_MAX_X, y1=RSI_THRESHOLD,
                                    fillcolor="red", opacity=0.1, layer="below", line_width=0)
 
@@ -228,7 +226,7 @@ if run_optimization:
                 fig_quad.add_vline(x=PE_THRESHOLD, line_width=1, line_dash="dash", line_color="gray")
                 fig_quad.add_hline(y=RSI_THRESHOLD, line_width=1, line_dash="dash", line_color="gray")
 
-                # Quadrant Labels (Centered visually)
+                # Quadrant Labels
                 fig_quad.add_annotation(x=PE_THRESHOLD/2, y=90, text="VALUE + MOMENTUM", showarrow=False, font=dict(color="green", size=14, weight="bold"))
                 fig_quad.add_annotation(x=PE_THRESHOLD * 1.5, y=90, text="EXPENSIVE MOMENTUM", showarrow=False, font=dict(color="orange", size=10))
                 fig_quad.add_annotation(x=PE_THRESHOLD/2, y=10, text="WEAK / VALUE TRAP", showarrow=False, font=dict(color="orange", size=10))
