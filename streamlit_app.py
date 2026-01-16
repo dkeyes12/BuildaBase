@@ -152,19 +152,39 @@ if run_optimization:
         if not df_market.empty:
             st.divider()
             
+            # --- MARKET ANALYSIS (Centered) ---
+            st.subheader("2. Market Data Analysis")
+            st.dataframe(
+                df_market.style
+                .format({
+                    "PE": "{:.2f}", 
+                    "RSI": "{:.2f}", 
+                    "Return": "{:.2%}", 
+                    "Volatility": "{:.2%}"
+                })
+                .set_properties(**{'text-align': 'center'})
+                .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}]),
+                use_container_width=True
+            )
+
             with st.spinner("Optimizing..."):
                 df_opt = optimize_portfolio(df_market, obj_choice, max_concentration)
 
             if not df_opt.empty:
                 st.subheader(f"2. Optimal Allocation ({obj_choice})")
                 
-                # Display table
+                # --- RESULTS TABLE (Centered) ---
                 display_df = df_opt[["Ticker", "Weight", "PE", "RSI"]].copy()
                 display_df["Weight"] = display_df["Weight"].apply(lambda x: f"{x:.1%}")
                 display_df["PE"] = display_df["PE"].apply(lambda x: f"{x:.1f}")
                 display_df["RSI"] = display_df["RSI"].apply(lambda x: f"{x:.1f}")
                 
-                st.dataframe(display_df, use_container_width=True)
+                st.dataframe(
+                    display_df.style
+                    .set_properties(**{'text-align': 'center'})
+                    .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}]),
+                    use_container_width=True
+                )
 
                 # --- VISUALIZATION: SYMMETRIC 2x2 PLOT ---
                 st.subheader("3. Portfolio Analysis (Value vs Momentum)")
@@ -173,9 +193,7 @@ if run_optimization:
                 RSI_THRESHOLD = 50
                 FIXED_MAX_X = PE_THRESHOLD * 2  # 50
 
-                # FIX: Separate the dataframes so points don't overlap
                 selected_tickers = df_opt['Ticker'].tolist()
-                # df_remaining contains ONLY stocks that were NOT selected
                 df_remaining = df_market[~df_market['Ticker'].isin(selected_tickers)]
 
                 fig_quad = go.Figure()
@@ -203,7 +221,6 @@ if run_optimization:
                     mode='markers+text',
                     text=df_opt['Ticker'],
                     textposition="top center",
-                    # Bold font for winners
                     textfont=dict(family="Arial Black", size=12, color="black"), 
                     marker=dict(
                         size=18, 
