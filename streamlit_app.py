@@ -154,7 +154,9 @@ if run_optimization:
             
             # --- MARKET ANALYSIS (Centered) ---
             st.subheader("2. Market Data Analysis")
-            st.dataframe(
+            
+            # USE st.table for perfect centering style
+            st.table(
                 df_market.style
                 .format({
                     "PE": "{:.2f}", 
@@ -163,8 +165,11 @@ if run_optimization:
                     "Volatility": "{:.2%}"
                 })
                 .set_properties(**{'text-align': 'center'})
-                .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}]),
-                use_container_width=True
+                .set_table_styles([
+                    {'selector': 'th', 'props': [('text-align', 'center')]},
+                    {'selector': 'td', 'props': [('text-align', 'center')]}
+                ])
+                .hide(axis="index") # Hides the index column for a cleaner look
             )
 
             with st.spinner("Optimizing..."):
@@ -179,11 +184,14 @@ if run_optimization:
                 display_df["PE"] = display_df["PE"].apply(lambda x: f"{x:.1f}")
                 display_df["RSI"] = display_df["RSI"].apply(lambda x: f"{x:.1f}")
                 
-                st.dataframe(
+                st.table(
                     display_df.style
                     .set_properties(**{'text-align': 'center'})
-                    .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}]),
-                    use_container_width=True
+                    .set_table_styles([
+                        {'selector': 'th', 'props': [('text-align', 'center')]},
+                        {'selector': 'td', 'props': [('text-align', 'center')]}
+                    ])
+                    .hide(axis="index")
                 )
 
                 # --- VISUALIZATION: SYMMETRIC 2x2 PLOT ---
