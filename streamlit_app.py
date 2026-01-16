@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from ortools.linear_solver import pywraplp
-import plotly.graph_objects as go # Changed to graph_objects for custom shapes
+import plotly.graph_objects as go 
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="OR-Tools Portfolio Optimizer", layout="wide")
@@ -27,6 +27,7 @@ def calculate_rsi(series, window=14):
 @st.cache_data
 def fetch_market_data(tickers, period="1y"):
     data = []
+    # Handle list of dicts or list of strings
     ticker_list = [t["Ticker"] for t in tickers] if isinstance(tickers[0], dict) else tickers
     
     with st.spinner(f"Fetching data for {len(ticker_list)} assets..."):
@@ -124,7 +125,6 @@ with col_input:
     if "user_tickers" not in st.session_state:
         st.session_state["user_tickers"] = pd.DataFrame(DEFAULT_TICKERS)
 
-    # UPDATED: Column config for width control
     edited_df = st.data_editor(
         st.session_state["user_tickers"], 
         column_config={
@@ -139,9 +139,9 @@ with col_input:
 with col_action:
     st.write("### ") 
     run_optimization = st.button("🚀 Run Optimization", type="primary", use_container_width=True)
+
 # 3. EXECUTION
 if run_optimization:
-    # Get list of tickers from the edited dataframe
     ticker_list = edited_df["Ticker"].tolist()
     
     if len(ticker_list) < 2:
@@ -152,15 +152,13 @@ if run_optimization:
         if not df_market.empty:
             st.divider()
             
-            # Run Optimization
             with st.spinner("Optimizing..."):
                 df_opt = optimize_portfolio(df_market, obj_choice, max_concentration)
 
             if not df_opt.empty:
                 st.subheader(f"2. Optimal Allocation ({obj_choice})")
                 
-                # --- RESULTS TABLE ---
-                # Simple display to avoid matplotlib/styling errors
+                # Simple display table
                 display_df = df_opt[["Ticker", "Weight", "PE", "RSI"]].copy()
                 display_df["Weight"] = display_df["Weight"].apply(lambda x: f"{x:.1%}")
                 display_df["PE"] = display_df["PE"].apply(lambda x: f"{x:.1f}")
@@ -168,21 +166,24 @@ if run_optimization:
                 
                 st.dataframe(display_df, use_container_width=True)
 
-                # --- VISUALIZATION: COLORED QUADRANTS ---
+                # --- VISUALIZATION: SYMMETRIC 2x2 PLOT ---
                 st.subheader("3. Portfolio Analysis (Value vs Momentum)")
                 
-                # Parameters for plotting
                 PE_THRESHOLD = 25  
                 RSI_THRESHOLD = 50
-                max_pe_in_data = df_market['PE'].max()
-                # Ensure this line is closed properly:
-                max_x = max(50, max_pe_in_data * 1.1)
+                
+                # --- FIX: FORCE SYMMETRY ---
+                # We set the max X to exactly double the threshold.
+                # This ensures the vertical line is always in the visual center.
+                FIXED_MAX_X = PE_THRESHOLD * 2  # 50
 
                 fig_quad = go.Figure()
 
-                # 1. Plot ALL Stocks (Gray/Ghost)
+                # 1. Plot ALL Stocks
+                # We use .clip() so stocks with PE > 50 stick to the edge instead of disappearing
                 fig_quad.add_trace(go.Scatter(
-                    x=df_market['PE'], y=df_market['RSI'],
+                    x=df_market['PE'].clip(upper=FIXED_MAX_X), 
+                    y=df_market['RSI'],
                     mode='markers+text',
                     text=df_market['Ticker'],
                     textposition="top center",
@@ -190,9 +191,10 @@ if run_optimization:
                     name='Universe'
                 ))
 
-                # 2. Plot SELECTED Portfolio Stocks (Blue/Highlighted)
+                # 2. Plot SELECTED Portfolio Stocks
                 fig_quad.add_trace(go.Scatter(
-                    x=df_opt['PE'], y=df_opt['RSI'],
+                    x=df_opt['PE'].clip(upper=FIXED_MAX_X), 
+                    y=df_opt['RSI'],
                     mode='markers+text',
                     text=df_opt['Ticker'],
                     textposition="top center",
@@ -206,7 +208,7 @@ if run_optimization:
                                    fillcolor="green", opacity=0.1, layer="below", line_width=0)
                 
                 # Q2: Top Right (Growth/Expensive) - Yellow
-                fig_quad.add_shape(type="rect", x0=PE_THRESHOLD, y0=RSI_THRESHOLD, x1=max_x, y1=100,
+                fig_quad.add_shape(type="rect", x0=PE_THRESHOLD, y0=RSI_THRESHOLD, x1=FIXED_MAX_X, y1=100,
                                    fillcolor="yellow", opacity=0.1, layer="below", line_width=0)
 
                 # Q3: Bottom Left (Value Trap/Weak) - Yellow
@@ -214,20 +216,21 @@ if run_optimization:
                                    fillcolor="yellow", opacity=0.1, layer="below", line_width=0)
                 
                 # Q4: Bottom Right (Expensive & Weak) - Red
-                fig_quad.add_shape(type="rect", x0=PE_THRESHOLD, y0=0, x1=max_x, y1=RSI_THRESHOLD,
+                fig_quad.add_shape(type="rect", x0=PE_THRESHOLD, y0=0, x1=FIXED_MAX_X, y1=RSI_THRESHOLD,
                                    fillcolor="red", opacity=0.1, layer="below", line_width=0)
 
                 # Add Crosshair Lines
                 fig_quad.add_vline(x=PE_THRESHOLD, line_width=1, line_dash="dash", line_color="gray")
                 fig_quad.add_hline(y=RSI_THRESHOLD, line_width=1, line_dash="dash", line_color="gray")
 
-                # Quadrant Labels
+                # Quadrant Labels (Centered visually)
                 fig_quad.add_annotation(x=PE_THRESHOLD/2, y=90, text="VALUE + MOMENTUM", showarrow=False, font=dict(color="green", size=14, weight="bold"))
-                fig_quad.add_annotation(x=PE_THRESHOLD*1.2, y=90, text="EXPENSIVE MOMENTUM", showarrow=False, font=dict(color="orange", size=10))
+                fig_quad.add_annotation(x=PE_THRESHOLD * 1.5, y=90, text="EXPENSIVE MOMENTUM", showarrow=False, font=dict(color="orange", size=10))
                 fig_quad.add_annotation(x=PE_THRESHOLD/2, y=10, text="WEAK / VALUE TRAP", showarrow=False, font=dict(color="orange", size=10))
-                fig_quad.add_annotation(x=PE_THRESHOLD*1.2, y=10, text="EXPENSIVE & WEAK", showarrow=False, font=dict(color="red", size=14, weight="bold"))
+                fig_quad.add_annotation(x=PE_THRESHOLD * 1.5, y=10, text="EXPENSIVE & WEAK", showarrow=False, font=dict(color="red", size=14, weight="bold"))
 
-                fig_quad.update_xaxes(title_text="P/E Ratio (Value)", range=[0, max_x])
+                # Strict Axis Range
+                fig_quad.update_xaxes(title_text="P/E Ratio (Value)", range=[0, FIXED_MAX_X])
                 fig_quad.update_yaxes(title_text="RSI (Momentum)", range=[0, 100])
                 fig_quad.update_layout(height=600, title="Market Universe & Selection")
 
