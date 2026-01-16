@@ -171,34 +171,39 @@ if run_optimization:
                 
                 PE_THRESHOLD = 25  
                 RSI_THRESHOLD = 50
-                
-                # --- FIX: FORCE SYMMETRY ---
-                # We set the max X to exactly double the threshold.
-                # This ensures the vertical line is always in the visual center.
                 FIXED_MAX_X = PE_THRESHOLD * 2  # 50
 
                 fig_quad = go.Figure()
 
-                # 1. Plot ALL Stocks
-                # We use .clip() so stocks with PE > 50 stick to the edge instead of disappearing
+                # 1. Plot ALL Stocks (Universe)
+                # FIX: Added 'line' to make points sharp, not fuzzy
                 fig_quad.add_trace(go.Scatter(
                     x=df_market['PE'].clip(upper=FIXED_MAX_X), 
                     y=df_market['RSI'],
                     mode='markers+text',
                     text=df_market['Ticker'],
                     textposition="top center",
-                    marker=dict(size=10, color='gray', opacity=0.5),
+                    marker=dict(
+                        size=12, 
+                        color='rgba(128, 128, 128, 0.5)', # Semi-transparent fill
+                        line=dict(width=1, color='dimgray') # Solid sharp border
+                    ),
                     name='Universe'
                 ))
 
                 # 2. Plot SELECTED Portfolio Stocks
+                # FIX: Changed border to black for high contrast sharpness
                 fig_quad.add_trace(go.Scatter(
                     x=df_opt['PE'].clip(upper=FIXED_MAX_X), 
                     y=df_opt['RSI'],
                     mode='markers+text',
                     text=df_opt['Ticker'],
                     textposition="top center",
-                    marker=dict(size=18, color='blue', line=dict(width=2, color='white')),
+                    marker=dict(
+                        size=18, 
+                        color='blue', 
+                        line=dict(width=2, color='black') # Sharp black border
+                    ),
                     name='Selected Portfolio'
                 ))
 
