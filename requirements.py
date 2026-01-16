@@ -2,5 +2,5 @@ streamlit
 yfinance
 pandas
 numpy 
-ortools.linear_solver.pywraplp
+ortools
 plotly
