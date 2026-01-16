@@ -152,24 +152,18 @@ if run_optimization:
         if not df_market.empty:
             st.divider()
             
-            # --- MARKET ANALYSIS (Centered) ---
+            # --- MARKET ANALYSIS ---
             st.subheader("2. Market Data Analysis")
             
-            # USE st.table for perfect centering style
-            st.table(
-                df_market.style
-                .format({
+            # use_container_width=False forces the table to 'shrink wrap' the content (Autosize)
+            st.dataframe(
+                df_market.style.format({
                     "PE": "{:.2f}", 
                     "RSI": "{:.2f}", 
                     "Return": "{:.2%}", 
                     "Volatility": "{:.2%}"
-                })
-                .set_properties(**{'text-align': 'center'})
-                .set_table_styles([
-                    {'selector': 'th', 'props': [('text-align', 'center')]},
-                    {'selector': 'td', 'props': [('text-align', 'center')]}
-                ])
-                .hide(axis="index") # Hides the index column for a cleaner look
+                }),
+                use_container_width=False  # <--- This enables autosizing to content width
             )
 
             with st.spinner("Optimizing..."):
@@ -178,21 +172,14 @@ if run_optimization:
             if not df_opt.empty:
                 st.subheader(f"2. Optimal Allocation ({obj_choice})")
                 
-                # --- RESULTS TABLE (Centered) ---
+                # --- RESULTS TABLE ---
                 display_df = df_opt[["Ticker", "Weight", "PE", "RSI"]].copy()
                 display_df["Weight"] = display_df["Weight"].apply(lambda x: f"{x:.1%}")
                 display_df["PE"] = display_df["PE"].apply(lambda x: f"{x:.1f}")
                 display_df["RSI"] = display_df["RSI"].apply(lambda x: f"{x:.1f}")
                 
-                st.table(
-                    display_df.style
-                    .set_properties(**{'text-align': 'center'})
-                    .set_table_styles([
-                        {'selector': 'th', 'props': [('text-align', 'center')]},
-                        {'selector': 'td', 'props': [('text-align', 'center')]}
-                    ])
-                    .hide(axis="index")
-                )
+                # use_container_width=False forces autosize here too
+                st.dataframe(display_df, use_container_width=False)
 
                 # --- VISUALIZATION: SYMMETRIC 2x2 PLOT ---
                 st.subheader("3. Portfolio Analysis (Value vs Momentum)")
