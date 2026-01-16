@@ -173,17 +173,21 @@ if run_optimization:
                 RSI_THRESHOLD = 50
                 FIXED_MAX_X = PE_THRESHOLD * 2  # 50
 
+                # FIX: Separate the dataframes so points don't overlap
+                selected_tickers = df_opt['Ticker'].tolist()
+                # df_remaining contains ONLY stocks that were NOT selected
+                df_remaining = df_market[~df_market['Ticker'].isin(selected_tickers)]
+
                 fig_quad = go.Figure()
 
-                # 1. Plot ALL Stocks (Universe)
+                # 1. Plot ONLY the Unselected Stocks (Universe)
                 fig_quad.add_trace(go.Scatter(
-                    x=df_market['PE'].clip(upper=FIXED_MAX_X), 
-                    y=df_market['RSI'],
+                    x=df_remaining['PE'].clip(upper=FIXED_MAX_X), 
+                    y=df_remaining['RSI'],
                     mode='markers+text',
-                    text=df_market['Ticker'],
+                    text=df_remaining['Ticker'],
                     textposition="top center",
-                    # FIX: Make text bold and black for sharpness
-                    textfont=dict(family="Arial Black", size=11, color="black"),
+                    textfont=dict(family="Arial", size=11, color="black"),
                     marker=dict(
                         size=12, 
                         color='rgba(128, 128, 128, 0.5)', 
@@ -192,15 +196,15 @@ if run_optimization:
                     name='Universe'
                 ))
 
-                # 2. Plot SELECTED Portfolio Stocks
+                # 2. Plot ONLY the Selected Portfolio Stocks
                 fig_quad.add_trace(go.Scatter(
                     x=df_opt['PE'].clip(upper=FIXED_MAX_X), 
                     y=df_opt['RSI'],
                     mode='markers+text',
                     text=df_opt['Ticker'],
                     textposition="top center",
-                    # FIX: Make selected text slightly larger and bold
-                    textfont=dict(family="Arial Black", size=14, color="black"),
+                    # Bold font for winners
+                    textfont=dict(family="Arial Black", size=12, color="black"), 
                     marker=dict(
                         size=18, 
                         color='blue', 
